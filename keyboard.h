@@ -135,6 +135,13 @@ private:
     void sendTextToTarget(const QString &text);
 
 private:
+    // 布局常量
+    static constexpr double KEYBOARD_ASPECT_RATIO = 2.5;  // 键盘宽高比
+    static constexpr int KEYBOARD_MARGIN = 20;             // 键盘边距
+    static constexpr int HALF_BUTTON_WIDTH = 30;           // 半个按钮宽度（用于错位布局）
+    static constexpr int FULL_BUTTON_WIDTH = 60;           // 一个按钮宽度（用于错位布局）
+
+private:
     QWidget *m_targetWidget;
     QVBoxLayout *m_mainLayout;
 

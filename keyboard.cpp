@@ -467,7 +467,7 @@ void Keyboard::createLetterKeyboard()
     QStringList row3 = {"A", "S", "D", "F", "G", "H", "J", "K", "L"};
     // 添加一个半列宽的空白占位符
     QWidget *spacer1 = new QWidget(this);
-    spacer1->setMaximumWidth(30);  // 半个按钮宽度
+    spacer1->setMaximumWidth(HALF_BUTTON_WIDTH);  // 半个按钮宽度
     m_letterLayout->addWidget(spacer1, 2, 0, 1, 1);
     
     for (int i = 0; i < row3.size(); ++i) {
@@ -482,7 +482,7 @@ void Keyboard::createLetterKeyboard()
     QStringList row4 = {"Z", "X", "C", "V", "B", "N", "M"};
     // 添加一个一列宽的空白占位符
     QWidget *spacer2 = new QWidget(this);
-    spacer2->setMaximumWidth(60);  // 一个按钮宽度
+    spacer2->setMaximumWidth(FULL_BUTTON_WIDTH);  // 一个按钮宽度
     m_letterLayout->addWidget(spacer2, 3, 0, 1, 1);
     
     for (int i = 0; i < row4.size(); ++i) {
@@ -710,12 +710,12 @@ void Keyboard::resizeEvent(QResizeEvent *event)
     // 获取父控件的大小
     QSize parentSize = parentWidget()->size();
     
-    // 定义键盘的目标宽高比 (例如: 16:9 的键盘比例)
-    const double targetAspectRatio = 2.5;  // 宽度是高度的2.5倍
+    // 定义键盘的目标宽高比
+    const double targetAspectRatio = KEYBOARD_ASPECT_RATIO;  // 宽度是高度的2.5倍
     
     // 计算父控件的可用空间 (留出一些边距)
-    int availableWidth = parentSize.width() - 20;
-    int availableHeight = parentSize.height() - 20;
+    int availableWidth = parentSize.width() - KEYBOARD_MARGIN;
+    int availableHeight = parentSize.height() - KEYBOARD_MARGIN;
     
     // 根据宽高比计算键盘的尺寸
     int keyboardWidth = availableWidth;
