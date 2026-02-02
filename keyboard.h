@@ -106,6 +106,9 @@ public:
     void setInputMode(InputMode mode);
     InputMode currentInputMode() const { return m_inputMode; }
 
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+
 signals:
     void keyClicked(int keyCode, const QString &text);
 
