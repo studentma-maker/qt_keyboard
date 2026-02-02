@@ -7,6 +7,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QRegularExpression>
+#include <QResizeEvent>
 
 // ==================== ChineseWidget 实现 ====================
 
@@ -411,11 +412,11 @@ void Keyboard::setupUI()
 
     // 创建中文候选词控件
     m_chineseWidget = new ChineseWidget(this);
-    m_chineseWidget->setMaximumHeight(60);
+    m_chineseWidget->setFixedHeight(50);  // 使用固定高度而不是最大高度
     m_chineseWidget->hide();  // 默认隐藏
     connect(m_chineseWidget, &ChineseWidget::candidateSelected,
             this, &Keyboard::onCandidateSelected);
-    m_mainLayout->addWidget(m_chineseWidget);
+    m_mainLayout->addWidget(m_chineseWidget, 0);  // stretch factor 0 - 不占用额外空间
 
     // 创建字母键盘
     m_letterWidget = new QWidget(this);
@@ -431,8 +432,8 @@ void Keyboard::setupUI()
     m_numberLayout->setContentsMargins(0, 0, 0, 0);
     createNumberKeyboard();
 
-    m_mainLayout->addWidget(m_letterWidget);
-    m_mainLayout->addWidget(m_numberWidget);
+    m_mainLayout->addWidget(m_letterWidget, 1);  // stretch factor 1 - 占用主要空间
+    m_mainLayout->addWidget(m_numberWidget, 1);  // stretch factor 1 - 占用主要空间
 
     // 默认显示字母键盘
     m_numberWidget->hide();
@@ -451,7 +452,7 @@ void Keyboard::createLetterKeyboard()
         addButtonToLayout(m_letterLayout, row1[i], Qt::Key_0 + i, 0, i);
     }
 
-    // 第二行: QWERTYUIOP
+    // 第二行: QWERTYUIOP (从第0列开始，模拟物理键盘布局)
     QStringList row2 = {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"};
     for (int i = 0; i < row2.size(); ++i) {
         QString lower = row2[i].toLower();
@@ -461,29 +462,40 @@ void Keyboard::createLetterKeyboard()
         connect(btn, &KeyboardButton::keyPressed, this, &Keyboard::onKeyButtonPressed);
     }
 
-    // 第三行: ASDFGHJKL
+    // 第三行: ASDFGHJKL (从第0.5列开始，实现错位效果)
+    // 使用列跨度和空白空间来实现错位
     QStringList row3 = {"A", "S", "D", "F", "G", "H", "J", "K", "L"};
+    // 添加一个半列宽的空白占位符
+    QWidget *spacer1 = new QWidget(this);
+    spacer1->setMaximumWidth(HALF_BUTTON_WIDTH);  // 半个按钮宽度
+    m_letterLayout->addWidget(spacer1, 2, 0, 1, 1);
+    
     for (int i = 0; i < row3.size(); ++i) {
         QString lower = row3[i].toLower();
         KeyboardButton *btn = createButton(lower, Qt::Key_A + (row3[i].toLatin1()[0] - 'A'));
         m_letterButtons[lower] = btn;
-        m_letterLayout->addWidget(btn, 2, i);
+        m_letterLayout->addWidget(btn, 2, i + 1);  // 从第1列开始，实现右移效果
         connect(btn, &KeyboardButton::keyPressed, this, &Keyboard::onKeyButtonPressed);
     }
 
-    // 第四行: ZXCVBNM + Backspace
+    // 第四行: ZXCVBNM + Backspace (从第1列开始，实现更大的错位)
     QStringList row4 = {"Z", "X", "C", "V", "B", "N", "M"};
+    // 添加一个一列宽的空白占位符
+    QWidget *spacer2 = new QWidget(this);
+    spacer2->setMaximumWidth(FULL_BUTTON_WIDTH);  // 一个按钮宽度
+    m_letterLayout->addWidget(spacer2, 3, 0, 1, 1);
+    
     for (int i = 0; i < row4.size(); ++i) {
         QString lower = row4[i].toLower();
         KeyboardButton *btn = createButton(lower, Qt::Key_A + (row4[i].toLatin1()[0] - 'A'));
         m_letterButtons[lower] = btn;
-        m_letterLayout->addWidget(btn, 3, i);
+        m_letterLayout->addWidget(btn, 3, i + 1);  // 从第1列开始
         connect(btn, &KeyboardButton::keyPressed, this, &Keyboard::onKeyButtonPressed);
     }
 
     // Backspace 按钮
     KeyboardButton *backspaceBtn = createButton("←", Qt::Key_Backspace);
-    m_letterLayout->addWidget(backspaceBtn, 3, 7, 1, 3);
+    m_letterLayout->addWidget(backspaceBtn, 3, 8, 1, 2);
     connect(backspaceBtn, &KeyboardButton::keyPressed, this, &Keyboard::onBackspacePressed);
 
     // 第五行: 数字切换, Caps, 空格, 中/英切换, Enter
@@ -686,6 +698,44 @@ void Keyboard::setInputMode(InputMode mode)
     }
 }
 
+void Keyboard::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+
+    // 如果没有父控件，则不需要调整大小
+    if (!parentWidget()) {
+        return;
+    }
+
+    // 获取父控件的大小
+    QSize parentSize = parentWidget()->size();
+    
+    // 定义键盘的目标宽高比
+    const double targetAspectRatio = KEYBOARD_ASPECT_RATIO;  // 宽度是高度的2.5倍
+    
+    // 计算父控件的可用空间 (留出一些边距)
+    int availableWidth = parentSize.width() - KEYBOARD_MARGIN;
+    int availableHeight = parentSize.height() - KEYBOARD_MARGIN;
+    
+    // 根据宽高比计算键盘的尺寸
+    int keyboardWidth = availableWidth;
+    int keyboardHeight = static_cast<int>(keyboardWidth / targetAspectRatio);
+    
+    // 如果高度超出可用空间，则根据高度重新计算
+    if (keyboardHeight > availableHeight) {
+        keyboardHeight = availableHeight;
+        keyboardWidth = static_cast<int>(keyboardHeight * targetAspectRatio);
+    }
+    
+    // 设置键盘的大小
+    resize(keyboardWidth, keyboardHeight);
+    
+    // 居中显示
+    int x = (parentSize.width() - keyboardWidth) / 2;
+    int y = (parentSize.height() - keyboardHeight) / 2;
+    move(x, y);
+}
+
 void Keyboard::updateKeyboardDisplay()
 {
     if (m_keyboardMode == Number) {
@@ -716,9 +766,12 @@ void Keyboard::onKeyButtonPressed(int keyCode, const QString &text)
         return;
     }
 
+    // 处理空格键 - 发送实际空格字符而不是 "Space" 文本
+    QString actualText = (keyCode == Qt::Key_Space) ? " " : text;
+
     // 英文输入模式或非字母键
-    sendKeyEventToTarget(keyCode, text);
-    emit keyClicked(keyCode, text);
+    sendKeyEventToTarget(keyCode, actualText);
+    emit keyClicked(keyCode, actualText);
 }
 
 void Keyboard::onCapsLockToggled()
