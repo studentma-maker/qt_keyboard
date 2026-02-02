@@ -767,10 +767,7 @@ void Keyboard::onKeyButtonPressed(int keyCode, const QString &text)
     }
 
     // 处理空格键 - 发送实际空格字符而不是 "Space" 文本
-    QString actualText = text;
-    if (keyCode == Qt::Key_Space) {
-        actualText = " ";
-    }
+    QString actualText = (keyCode == Qt::Key_Space) ? " " : text;
 
     // 英文输入模式或非字母键
     sendKeyEventToTarget(keyCode, actualText);
